@@ -1,0 +1,157 @@
+local HttpService = game:GetService("HttpService")
+local setClipboard = setclipboard
+local fRequest = request or http.request or http_request or syn.request
+
+-- Base URLs
+local generateKeyUrl = "http://37.114.46.37:6243/genkey?hwid="
+local verifyKeyUrl = "http://37.114.46.37:6243/verifykey?key="
+
+-- HWID
+local hwid = gethwid()
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 400, 0, 300)
+Frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.BackgroundTransparency = 0.1
+Frame.BorderSizePixel = 0
+
+-- Add UI corner for rounded edges
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0, 10)
+
+-- Title Label
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.Text = "Key System"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextScaled = true
+local TitleCorner = Instance.new("UICorner", Title)
+TitleCorner.CornerRadius = UDim.new(0, 10)
+
+-- Generate Key Button
+local GenerateButton = Instance.new("TextButton", Frame)
+GenerateButton.Size = UDim2.new(0.8, 0, 0, 50)
+GenerateButton.Position = UDim2.new(0.1, 0, 0.25, 0)
+GenerateButton.Text = "Generate Key"
+GenerateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+GenerateButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+local GenerateButtonCorner = Instance.new("UICorner", GenerateButton)
+GenerateButtonCorner.CornerRadius = UDim.new(0, 10)
+
+-- Key Label
+local KeyLabel = Instance.new("TextLabel", Frame)
+KeyLabel.Size = UDim2.new(0.8, 0, 0, 50)
+KeyLabel.Position = UDim2.new(0.1, 0, 0.4, 0)
+KeyLabel.Text = "Generated Key: None"
+KeyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+KeyLabel.TextScaled = true
+local KeyLabelCorner = Instance.new("UICorner", KeyLabel)
+KeyLabelCorner.CornerRadius = UDim.new(0, 10)
+
+-- Verify Textbox
+local VerifyTextbox = Instance.new("TextBox", Frame)
+VerifyTextbox.Size = UDim2.new(0.8, 0, 0, 50)
+VerifyTextbox.Position = UDim2.new(0.1, 0, 0.6, 0)
+VerifyTextbox.Text = "Enter your key here"
+VerifyTextbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyTextbox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+VerifyTextbox.TextScaled = true
+local VerifyTextboxCorner = Instance.new("UICorner", VerifyTextbox)
+VerifyTextboxCorner.CornerRadius = UDim.new(0, 10)
+
+-- Verify Button
+local VerifyButton = Instance.new("TextButton", Frame)
+VerifyButton.Size = UDim2.new(0.8, 0, 0, 50)
+VerifyButton.Position = UDim2.new(0.1, 0, 0.75, 0)
+VerifyButton.Text = "Verify Key"
+VerifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+local VerifyButtonCorner = Instance.new("UICorner", VerifyButton)
+VerifyButtonCorner.CornerRadius = UDim.new(0, 10)
+
+-- Verification Result Label
+local ResultLabel = Instance.new("TextLabel", Frame)
+ResultLabel.Size = UDim2.new(0.8, 0, 0, 50)
+ResultLabel.Position = UDim2.new(0.1, 0, 0.9, 0)
+ResultLabel.Text = "Verification Result: None"
+ResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ResultLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ResultLabel.TextScaled = true
+local ResultLabelCorner = Instance.new("UICorner", ResultLabel)
+ResultLabelCorner.CornerRadius = UDim.new(0, 10)
+
+-- Frame for successful verification
+local SuccessFrame = Instance.new("Frame", ScreenGui)
+SuccessFrame.Size = UDim2.new(0, 400, 0, 300)
+SuccessFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+SuccessFrame.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+SuccessFrame.Visible = false
+local SuccessUICorner = Instance.new("UICorner", SuccessFrame)
+SuccessUICorner.CornerRadius = UDim.new(0, 10)
+
+local SuccessLabel = Instance.new("TextLabel", SuccessFrame)
+SuccessLabel.Size = UDim2.new(1, 0, 1, 0)
+SuccessLabel.Text = "Hi"
+SuccessLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SuccessLabel.TextScaled = true
+SuccessLabel.BackgroundTransparency = 1
+
+-- Function to generate a key
+GenerateButton.MouseButton1Click:Connect(function()
+    local url = generateKeyUrl .. hwid
+
+    KeyLabel.Text = "Generating key..."
+
+    -- Send the request
+    local response = fRequest({
+        Url = url,
+        Method = "GET",
+    })
+
+    if response and response.Body then
+        local data = HttpService:JSONDecode(response.Body)
+        if data.success then
+            KeyLabel.Text = "Generated Key: " .. data.key
+            setClipboard(data.key) -- Copy only the key to clipboard
+        else
+            KeyLabel.Text = "Error: " .. data.message
+        end
+    else
+        KeyLabel.Text = "Error: Failed to contact server"
+    end
+end)
+
+-- Function to verify a key
+VerifyButton.MouseButton1Click:Connect(function()
+    local key = VerifyTextbox.Text
+    local url = verifyKeyUrl .. key
+
+    ResultLabel.Text = "Verifying key..."
+
+    -- Send the request
+    local response = fRequest({
+        Url = url,
+        Method = "GET",
+    })
+
+    if response and response.Body then
+        local data = HttpService:JSONDecode(response.Body)
+        if data.valid then
+            ResultLabel.Text = "Verification Result: Valid Key"
+            Frame.Visible = false
+            SuccessFrame.Visible = true
+        else
+            ResultLabel.Text = "Verification Result: " .. data.message
+        end
+    else
+        ResultLabel.Text = "Error: Failed to contact server"
+    end
+end)
